@@ -1,0 +1,6 @@
+{
+  "name": "Studyhub - CBSE Class 10 Math & Science",
+  "description": "Premium educational web application for CBSE Class 10 students with notes, practice questions, quizzes, PDF library, and full admin management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

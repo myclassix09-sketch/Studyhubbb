@@ -1,0 +1,239 @@
+{
+  "entities": {
+    "Admin": {
+      "title": "Admin",
+      "description": "Administrator identity document",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "role": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["email", "role"]
+    },
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Global website metadata and layout toggles",
+      "type": "object",
+      "properties": {
+        "siteName": { "type": "string" },
+        "tagline": { "type": "string" },
+        "heroDescription": { "type": "string" },
+        "ctaText": { "type": "string" },
+        "ctaLink": { "type": "string" },
+        "footerNote": { "type": "string" },
+        "supportEmail": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["siteName", "tagline"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "Notice board announcement",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "badge": { "type": "string" },
+        "isPublished": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["title", "content", "isPublished"]
+    },
+    "Subject": {
+      "title": "Subject",
+      "description": "Academic subject",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "slug": { "type": "string" },
+        "description": { "type": "string" },
+        "icon": { "type": "string" },
+        "color": { "type": "string" },
+        "order": { "type": "number" },
+        "isPublished": { "type": "boolean" }
+      },
+      "required": ["title", "slug", "isPublished"]
+    },
+    "Chapter": {
+      "title": "Chapter",
+      "description": "Curriculum chapter",
+      "type": "object",
+      "properties": {
+        "subjectId": { "type": "string" },
+        "chapterNumber": { "type": "number" },
+        "title": { "type": "string" },
+        "subBranch": { "type": "string" },
+        "description": { "type": "string" },
+        "isPublished": { "type": "boolean" },
+        "totalLessons": { "type": "number" },
+        "estimatedMinutes": { "type": "number" },
+        "order": { "type": "number" }
+      },
+      "required": ["subjectId", "chapterNumber", "title", "isPublished"]
+    },
+    "Lesson": {
+      "title": "Lesson",
+      "description": "Individual chapter lesson with structured educational blocks",
+      "type": "object",
+      "properties": {
+        "chapterId": { "type": "string" },
+        "subjectId": { "type": "string" },
+        "title": { "type": "string" },
+        "order": { "type": "number" },
+        "estimatedMinutes": { "type": "number" },
+        "isPublished": { "type": "boolean" },
+        "blocksJson": { "type": "string" },
+        "summary": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["chapterId", "subjectId", "title", "isPublished"]
+    },
+    "Quiz": {
+      "title": "Quiz",
+      "description": "Chapter or subject assessment test",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "subjectId": { "type": "string" },
+        "chapterId": { "type": "string" },
+        "difficulty": { "type": "string" },
+        "durationMinutes": { "type": "number" },
+        "passingScore": { "type": "number" },
+        "isPublished": { "type": "boolean" },
+        "questionsJson": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["title", "subjectId", "isPublished"]
+    },
+    "QuizAttempt": {
+      "title": "QuizAttempt",
+      "description": "Student quiz submission record",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "quizId": { "type": "string" },
+        "quizTitle": { "type": "string" },
+        "subjectId": { "type": "string" },
+        "score": { "type": "number" },
+        "totalQuestions": { "type": "number" },
+        "percentage": { "type": "number" },
+        "passed": { "type": "boolean" },
+        "timeSpentSeconds": { "type": "number" },
+        "answersJson": { "type": "string" },
+        "submittedAt": { "type": "string" }
+      },
+      "required": ["userId", "quizId", "score", "totalQuestions", "percentage"]
+    },
+    "StudentProgress": {
+      "title": "StudentProgress",
+      "description": "Student progress record per chapter or user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "chapterId": { "type": "string" },
+        "subjectId": { "type": "string" },
+        "completed": { "type": "boolean" },
+        "completedLessons": { "type": "string" },
+        "lastLessonId": { "type": "string" },
+        "lastAccessedAt": { "type": "string" }
+      },
+      "required": ["userId", "chapterId"]
+    },
+    "PdfDocument": {
+      "title": "PdfDocument",
+      "description": "Class 10 revision notes, worksheets, sample papers",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "subjectId": { "type": "string" },
+        "chapterId": { "type": "string" },
+        "category": { "type": "string" },
+        "fileUrl": { "type": "string" },
+        "fileSize": { "type": "string" },
+        "isPublished": { "type": "boolean" },
+        "downloadsCount": { "type": "number" },
+        "uploadedAt": { "type": "string" }
+      },
+      "required": ["title", "subjectId", "category", "fileUrl", "isPublished"]
+    },
+    "ContactSubmission": {
+      "title": "ContactSubmission",
+      "description": "Feedback or contact message from students",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["name", "email", "message"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Admin action history record",
+      "type": "object",
+      "properties": {
+        "adminEmail": { "type": "string" },
+        "action": { "type": "string" },
+        "targetType": { "type": "string" },
+        "targetId": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["adminEmail", "action", "targetType", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Admin access allowlist"
+    },
+    "/site_settings/{settingId}": {
+      "schema": "SiteSettings",
+      "description": "Global website configuration and homepage copy"
+    },
+    "/announcements/{announcementId}": {
+      "schema": "Announcement",
+      "description": "Studyhub announcements"
+    },
+    "/subjects/{subjectId}": {
+      "schema": "Subject",
+      "description": "Academic subjects list"
+    },
+    "/chapters/{chapterId}": {
+      "schema": "Chapter",
+      "description": "CBSE Class 10 chapters"
+    },
+    "/lessons/{lessonId}": {
+      "schema": "Lesson",
+      "description": "Lessons and educational blocks"
+    },
+    "/quizzes/{quizId}": {
+      "schema": "Quiz",
+      "description": "Quizzes and practice tests"
+    },
+    "/quiz_attempts/{attemptId}": {
+      "schema": "QuizAttempt",
+      "description": "Student quiz attempts and scores"
+    },
+    "/student_progress/{progressId}": {
+      "schema": "StudentProgress",
+      "description": "Student chapter and lesson completion"
+    },
+    "/pdf_documents/{pdfId}": {
+      "schema": "PdfDocument",
+      "description": "PDF repository metadata and links"
+    },
+    "/contact_submissions/{submissionId}": {
+      "schema": "ContactSubmission",
+      "description": "Student feedback submissions"
+    },
+    "/audit_logs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Administrative actions audit trail"
+    }
+  }
+}

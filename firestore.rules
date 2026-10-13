@@ -1,0 +1,113 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && (request.auth.token.email_verified == true || request.auth.token.firebase.sign_in_provider == 'google.com');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email == 'myclassix09@gmail.com') ||
+        (request.auth.token.email == 'himanshu00@studyhub.edu') ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128;
+    }
+
+    // Admin Allowlist Collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Site Settings
+    match /site_settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Announcements
+    match /announcements/{announcementId} {
+      allow read: if isAdmin() || resource.data.isPublished == true;
+      allow write: if isAdmin();
+    }
+
+    // Academic Subjects
+    match /subjects/{subjectId} {
+      allow read: if isAdmin() || resource.data.isPublished == true;
+      allow write: if isAdmin();
+    }
+
+    // Chapters
+    match /chapters/{chapterId} {
+      allow read: if isAdmin() || resource.data.isPublished == true;
+      allow write: if isAdmin();
+    }
+
+    // Lessons
+    match /lessons/{lessonId} {
+      allow read: if isAdmin() || resource.data.isPublished == true;
+      allow write: if isAdmin();
+    }
+
+    // Quizzes
+    match /quizzes/{quizId} {
+      allow read: if isAdmin() || resource.data.isPublished == true;
+      allow write: if isAdmin();
+    }
+
+    // Student Quiz Attempts (Strict per-student isolation)
+    match /quiz_attempts/{attemptId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if false; // Quiz attempts are immutable
+      allow delete: if isAdmin();
+    }
+
+    // Student Progress Records
+    match /student_progress/{progressId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && (
+        (resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid) ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // PDF Documents Library
+    match /pdf_documents/{pdfId} {
+      allow read: if isAdmin() || resource.data.isPublished == true;
+      allow write: if isAdmin();
+    }
+
+    // Contact and Feedback Submissions
+    match /contact_submissions/{submissionId} {
+      allow create: if request.resource.data.name is string &&
+                       request.resource.data.email is string &&
+                       request.resource.data.message is string;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Administrative Audit Trail
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false; // Audit logs are tamper-proof
+    }
+  }
+}
