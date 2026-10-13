@@ -271,7 +271,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, openA
               >
                 <div className="flex items-center gap-2.5">
                   <Shield className="w-4 h-4 text-amber-400" />
-                  <span>Separate Admin Login (Himanshu00)</span>
+                  <span>Administrator Login</span>
                 </div>
                 <ChevronRight className="w-4 h-4 opacity-50" />
               </button>

@@ -15,83 +15,55 @@ import { auth, googleProvider, db } from '../firebase/config';
 interface AuthContextType {
   user: User | null;
   isAdmin: boolean;
-  adminId: string | null;
   loading: boolean;
   authError: string | null;
   setAuthError: (err: string | null) => void;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, pass: string) => Promise<void>;
   signUpWithEmail: (name: string, email: string, pass: string) => Promise<void>;
-  loginAsAdmin: (adminIdInput: string, passwordInput: string) => Promise<void>;
+  adminSignIn: (email: string, pass: string) => Promise<void>;
   signOut: () => Promise<void>;
   sendResetPassword: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Primary verified platform administrator email
 const PRIMARY_ADMIN_EMAIL = 'myclassix09@gmail.com';
-const DEDICATED_ADMIN_ID = 'Himanshu00';
-const DEDICATED_ADMIN_EMAIL = 'himanshu00@studyhub.edu';
-const DEDICATED_ADMIN_PASS = 'S@tudyhubb';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
-    return localStorage.getItem('studyhub_admin_session') === DEDICATED_ADMIN_ID;
-  });
-  const [adminId, setAdminId] = useState<string | null>(() => {
-    return localStorage.getItem('studyhub_admin_session');
-  });
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
-      const savedAdminSession = localStorage.getItem('studyhub_admin_session');
 
       if (currentUser) {
         try {
           const userEmail = currentUser.email?.toLowerCase();
-          if (
-            userEmail === PRIMARY_ADMIN_EMAIL.toLowerCase() ||
-            userEmail === DEDICATED_ADMIN_EMAIL.toLowerCase() ||
-            savedAdminSession === DEDICATED_ADMIN_ID
-          ) {
+          if (userEmail === PRIMARY_ADMIN_EMAIL.toLowerCase()) {
             setIsAdmin(true);
-            setAdminId(savedAdminSession || DEDICATED_ADMIN_ID);
-            // Ensure admin document exists in firestore
+            // Ensure admin authorization document exists in firestore
             const adminDocRef = doc(db, 'admins', currentUser.uid);
             await setDoc(adminDocRef, {
               email: currentUser.email,
-              adminId: DEDICATED_ADMIN_ID,
               role: 'super_admin',
               updatedAt: new Date().toISOString()
             }, { merge: true }).catch(() => {});
           } else {
+            // Check verified admins collection in Firestore
             const adminDoc = await getDoc(doc(db, 'admins', currentUser.uid));
-            if (adminDoc.exists()) {
-              setIsAdmin(true);
-              setAdminId(adminDoc.data()?.adminId || 'Admin');
-            } else if (savedAdminSession !== DEDICATED_ADMIN_ID) {
-              setIsAdmin(false);
-              setAdminId(null);
-            }
+            setIsAdmin(adminDoc.exists());
           }
-        } catch {
-          if (savedAdminSession === DEDICATED_ADMIN_ID) {
-            setIsAdmin(true);
-            setAdminId(DEDICATED_ADMIN_ID);
-          }
+        } catch (err) {
+          console.warn('Admin authorization verification notice:', err);
+          setIsAdmin(currentUser.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL.toLowerCase());
         }
       } else {
-        if (savedAdminSession === DEDICATED_ADMIN_ID) {
-          setIsAdmin(true);
-          setAdminId(DEDICATED_ADMIN_ID);
-        } else {
-          setIsAdmin(false);
-          setAdminId(null);
-        }
+        setIsAdmin(false);
       }
       setLoading(false);
     });
@@ -99,57 +71,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  const loginAsAdmin = async (adminIdInput: string, passwordInput: string) => {
+  const adminSignIn = async (email: string, pass: string) => {
     setAuthError(null);
-    const cleanedId = adminIdInput.trim();
-
-    // Check credentials:
-    // Admin ID must be Himanshu00 and password must be S@tudyhubb
-    const isIdMatch =
-      cleanedId.toLowerCase() === DEDICATED_ADMIN_ID.toLowerCase() ||
-      cleanedId.toLowerCase() === DEDICATED_ADMIN_EMAIL.toLowerCase() ||
-      cleanedId.toLowerCase() === PRIMARY_ADMIN_EMAIL.toLowerCase();
-
-    const isPassMatch = passwordInput === DEDICATED_ADMIN_PASS;
-
-    if (!isIdMatch || !isPassMatch) {
-      const err = 'Invalid Administrator ID or Password. Please check your credentials.';
-      setAuthError(err);
-      throw new Error(err);
-    }
-
-    // Set secure local admin session
-    localStorage.setItem('studyhub_admin_session', DEDICATED_ADMIN_ID);
-    setIsAdmin(true);
-    setAdminId(DEDICATED_ADMIN_ID);
-
-    // Synchronize with Firebase Auth to provide authenticated Firestore operations
     try {
-      try {
-        await signInWithEmailAndPassword(auth, DEDICATED_ADMIN_EMAIL, DEDICATED_ADMIN_PASS);
-      } catch (signInErr: any) {
-        if (
-          signInErr?.message?.includes('user-not-found') ||
-          signInErr?.code === 'auth/user-not-found' ||
-          signInErr?.code === 'auth/invalid-credential'
-        ) {
-          // Provision dedicated admin account in Firebase Auth
-          const cred = await createUserWithEmailAndPassword(
-            auth,
-            DEDICATED_ADMIN_EMAIL,
-            DEDICATED_ADMIN_PASS
-          );
-          await updateProfile(cred.user, { displayName: 'Himanshu (Admin)' });
-          await setDoc(doc(db, 'admins', cred.user.uid), {
-            email: DEDICATED_ADMIN_EMAIL,
-            adminId: DEDICATED_ADMIN_ID,
-            role: 'super_admin',
-            createdAt: new Date().toISOString()
-          }, { merge: true });
-        }
+      const cred = await signInWithEmailAndPassword(auth, email.trim(), pass);
+      const signedInUser = cred.user;
+      const userEmail = signedInUser.email?.toLowerCase();
+
+      // Check if primary admin or exists in admins collection
+      let hasAdminPrivileges = userEmail === PRIMARY_ADMIN_EMAIL.toLowerCase();
+
+      if (!hasAdminPrivileges) {
+        const adminDoc = await getDoc(doc(db, 'admins', signedInUser.uid));
+        hasAdminPrivileges = adminDoc.exists();
+      } else {
+        // Guarantee Firestore admin record for primary admin
+        await setDoc(doc(db, 'admins', signedInUser.uid), {
+          email: signedInUser.email,
+          role: 'super_admin',
+          updatedAt: new Date().toISOString()
+        }, { merge: true }).catch(() => {});
       }
-    } catch (fbErr) {
-      console.warn('Firebase user sync completed or deferred:', fbErr);
+
+      if (!hasAdminPrivileges) {
+        // Not an authorized admin
+        await fbSignOut(auth);
+        setIsAdmin(false);
+        const deniedMsg = 'Access Denied: This account is not authorized as an administrator.';
+        setAuthError(deniedMsg);
+        throw new Error(deniedMsg);
+      }
+
+      setIsAdmin(true);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Admin authentication failed.';
+      setAuthError(message);
+      throw new Error(message);
     }
   };
 
@@ -158,16 +115,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Google sign in failed';
+      let message = err instanceof Error ? err.message : 'Google sign in failed';
+      if (err instanceof Error && err.message.includes('unauthorized-domain')) {
+        message = 'Please add your GitHub Pages domain to Firebase Console > Authentication > Settings > Authorized Domains.';
+      }
       setAuthError(message);
-      throw err;
+      throw new Error(message);
     }
   };
 
   const signInWithEmail = async (email: string, pass: string) => {
     setAuthError(null);
     try {
-      await signInWithEmailAndPassword(auth, email, pass);
+      await signInWithEmailAndPassword(auth, email.trim(), pass);
     } catch (err: unknown) {
       let message = 'Failed to sign in. Please check your credentials.';
       if (err instanceof Error && err.message.includes('user-not-found')) {
@@ -185,22 +145,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUpWithEmail = async (name: string, email: string, pass: string) => {
     setAuthError(null);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), pass);
       if (name.trim()) {
         await updateProfile(userCredential.user, { displayName: name.trim() });
       }
-      if (
-        email.toLowerCase() === PRIMARY_ADMIN_EMAIL.toLowerCase() ||
-        email.toLowerCase() === DEDICATED_ADMIN_EMAIL.toLowerCase()
-      ) {
+      // If primary admin signs up with password, provision admin document
+      if (email.toLowerCase() === PRIMARY_ADMIN_EMAIL.toLowerCase()) {
         await setDoc(doc(db, 'admins', userCredential.user.uid), {
           email,
-          adminId: DEDICATED_ADMIN_ID,
           role: 'super_admin',
           createdAt: new Date().toISOString()
         }, { merge: true });
         setIsAdmin(true);
-        setAdminId(DEDICATED_ADMIN_ID);
       }
     } catch (err: unknown) {
       let message = 'Failed to create account.';
@@ -215,9 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    localStorage.removeItem('studyhub_admin_session');
     setIsAdmin(false);
-    setAdminId(null);
     try {
       await fbSignOut(auth);
     } catch (err) {
@@ -228,7 +182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const sendResetPassword = async (email: string) => {
     setAuthError(null);
     try {
-      await sendPasswordResetEmail(auth, email);
+      await sendPasswordResetEmail(auth, email.trim());
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to send password reset email.';
       setAuthError(message);
@@ -241,14 +195,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         isAdmin,
-        adminId,
         loading,
         authError,
         setAuthError,
         signInWithGoogle,
         signInWithEmail,
         signUpWithEmail,
-        loginAsAdmin,
+        adminSignIn,
         signOut,
         sendResetPassword,
       }}

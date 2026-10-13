@@ -288,7 +288,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Note about admin */}
         <div className="mt-4 pt-3 border-t border-slate-800/80 text-center text-[10px] text-slate-500 flex items-center justify-between">
-          <span>Admin ID: <span className="text-slate-300 font-mono">Himanshu00</span></span>
+          <span>Are you a site educator?</span>
           {onOpenAdminLogin && (
             <button
               type="button"
@@ -298,7 +298,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               }}
               className="text-amber-400 font-bold hover:underline"
             >
-              Separate Admin Login →
+              Administrator Login →
             </button>
           )}
         </div>

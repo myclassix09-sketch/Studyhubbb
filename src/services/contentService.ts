@@ -39,10 +39,7 @@ import {
 // Helper to log administrative actions
 export async function logAdminAction(action: string, targetType: string, targetId: string, details: string) {
   try {
-    const adminEmail =
-      auth.currentUser?.email ||
-      (typeof window !== 'undefined' ? localStorage.getItem('studyhub_admin_session') : null) ||
-      'Himanshu00';
+    const adminEmail = auth.currentUser?.email || 'administrator';
     await addDoc(collection(db, 'audit_logs'), {
       adminEmail,
       action,

@@ -19,7 +19,6 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && (
         (request.auth.token.email == 'myclassix09@gmail.com') ||
-        (request.auth.token.email == 'himanshu00@studyhub.edu') ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }

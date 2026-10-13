@@ -2,7 +2,19 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import firebaseConfig from '../../firebase-applet-config.json';
+import rawFirebaseConfig from '../../firebase-applet-config.json';
+
+const fallbackConfig = {
+  projectId: "quadratic-reactor-s5wls",
+  appId: "1:807932952689:web:249766b24616b8f1909bd0",
+  apiKey: "AIzaSyCsA7vHTnSAWcoZ5Wk2mdg0yFB5FphL4Dw",
+  authDomain: "quadratic-reactor-s5wls.firebaseapp.com",
+  firestoreDatabaseId: "ai-studio-studyhubcbseclas-0c7c0b01-b7ca-4387-a8d6-85463da57ca5",
+  storageBucket: "quadratic-reactor-s5wls.firebasestorage.app",
+  messagingSenderId: "807932952689"
+};
+
+const firebaseConfig = { ...fallbackConfig, ...rawFirebaseConfig };
 
 const app = initializeApp(firebaseConfig);
 

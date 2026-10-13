@@ -74,7 +74,7 @@ type AdminTab =
   | 'audit';
 
 export const AdminPanel: React.FC<{ onExitAdmin: () => void; onOpenAdminLogin?: () => void }> = ({ onExitAdmin, onOpenAdminLogin }) => {
-  const { user, isAdmin, adminId, signOut } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
   const [currentTab, setCurrentTab] = useState<AdminTab>('overview');
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -167,7 +167,7 @@ export const AdminPanel: React.FC<{ onExitAdmin: () => void; onOpenAdminLogin?: 
         </div>
         <h2 className="text-2xl font-bold text-white">Administrator Access Required</h2>
         <p className="text-xs text-slate-400">
-          This panel is restricted to verified administrators (Admin ID: <span className="text-slate-300 font-mono font-semibold">Himanshu00</span>).
+          This panel is restricted to verified platform administrators.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-2">
           {onOpenAdminLogin && (
@@ -175,7 +175,7 @@ export const AdminPanel: React.FC<{ onExitAdmin: () => void; onOpenAdminLogin?: 
               onClick={onOpenAdminLogin}
               className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition-all shadow-md"
             >
-              Log In as Admin (Himanshu00)
+              Sign In as Administrator
             </button>
           )}
           <button
@@ -261,8 +261,8 @@ export const AdminPanel: React.FC<{ onExitAdmin: () => void; onOpenAdminLogin?: 
             <Database className="w-3.5 h-3.5 text-emerald-400" />
             <span>{seeding ? 'Seeding...' : 'Reset Default Curriculum'}</span>
           </button>
-          <div className="text-[10px] text-amber-400/90 text-center font-mono font-semibold pt-1">
-            Admin: {adminId || user?.displayName || 'Himanshu00'}
+          <div className="text-[10px] text-amber-400/90 text-center font-mono font-semibold pt-1 truncate px-2">
+            Admin: {user?.email || 'Verified Administrator'}
           </div>
           <button
             onClick={() => {

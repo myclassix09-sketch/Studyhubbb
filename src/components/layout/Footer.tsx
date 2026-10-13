@@ -136,12 +136,12 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentTab, openAuthModal }) 
                   className="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 transition-colors flex items-center justify-center gap-1.5"
                 >
                   <Shield className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Admin Login (Himanshu00)</span>
+                  <span>Administrator Portal</span>
                 </button>
               </div>
             )}
             <div className="text-[11px] text-slate-500 leading-tight">
-              Administrator ID: <span className="text-slate-300 font-mono font-semibold">Himanshu00</span>
+              Verified Administrator Access (Firebase Protected)
             </div>
           </div>
         </div>
