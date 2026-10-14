@@ -23,7 +23,7 @@ interface StudentAccessGateProps {
 }
 
 export const StudentAccessGate: React.FC<StudentAccessGateProps> = ({ onOpenAdminLogin }) => {
-  const { signInWithEmail, signUpWithEmail, signInWithGoogle, sendResetPassword } = useAuth();
+  const { signInWithEmail, signUpWithEmail, signInWithGoogle, sendResetPassword, continueAsGuest } = useAuth();
   const [tab, setTab] = useState<'signin' | 'signup'>('signin');
   
   // Form fields
@@ -398,6 +398,21 @@ export const StudentAccessGate: React.FC<StudentAccessGateProps> = ({ onOpenAdmi
               )}
             </button>
           </form>
+
+          {/* Quick guest exploration button */}
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={continueAsGuest}
+              className="w-full py-2.5 px-4 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 group"
+            >
+              <Sparkles className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+              <span>Explore as Guest Student (Instant Free Access)</span>
+            </button>
+            <p className="text-[10px] text-slate-400 text-center mt-1.5">
+              Instant access • Browse all 27 chapters, quizzes, formula notes & PDFs
+            </p>
+          </div>
 
           {/* Bottom admin switcher */}
           <div className="pt-2 border-t border-slate-800/80 text-center">
