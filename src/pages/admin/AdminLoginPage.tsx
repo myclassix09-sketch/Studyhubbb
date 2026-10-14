@@ -11,6 +11,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onSuccess, onBac
   const { adminSignIn, signInWithGoogle, user, isAdmin } = useAuth();
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -173,13 +174,20 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onSuccess, onBac
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
                 placeholder="••••••••••••"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors text-xs"
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
             </div>
           </div>
 
@@ -199,6 +207,36 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onSuccess, onBac
             )}
           </button>
         </form>
+
+        {/* Admin Credentials Quick-Reference & Autofill */}
+        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs space-y-2">
+          <div className="flex items-center justify-between text-amber-400 font-bold">
+            <span>Configured Administrator Credentials</span>
+            <button
+              type="button"
+              onClick={() => {
+                setEmailInput('Himanshu00');
+                setPasswordInput('S@tudyhubb');
+              }}
+              className="text-[11px] px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-semibold transition-colors"
+            >
+              Autofill Credentials
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-300">
+            <div className="bg-slate-950/70 p-2 rounded-lg border border-slate-800">
+              <span className="text-slate-500 block">Admin ID:</span>
+              <strong className="text-amber-300 font-mono">Himanshu00</strong>
+            </div>
+            <div className="bg-slate-950/70 p-2 rounded-lg border border-slate-800">
+              <span className="text-slate-500 block">Admin Password:</span>
+              <strong className="text-amber-300 font-mono">S@tudyhubb</strong>
+            </div>
+          </div>
+          <p className="text-[10px] text-slate-400">
+            Or sign in with Google using <span className="text-slate-200 font-mono">myclassix09@gmail.com</span>.
+          </p>
+        </div>
 
         <div className="pt-2 text-center text-[11px] text-slate-500">
           Enforced by Cloud Firestore Security Rules • Zero Client Elevation
