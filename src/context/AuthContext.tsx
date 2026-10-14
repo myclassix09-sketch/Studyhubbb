@@ -38,7 +38,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Safety timeout: Ensure app loads even if Firebase Auth takes time, network is constrained, or adblockers block auth endpoints
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 2500);
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      clearTimeout(safetyTimer);
       setUser(currentUser);
 
       if (currentUser) {
@@ -71,7 +77,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(safetyTimer);
+      unsubscribe();
+    };
   }, []);
 
   const adminSignIn = async (emailOrId: string, pass: string) => {

@@ -124,20 +124,27 @@ export const HomePage: React.FC<HomePageProps> = ({
           </p>
 
           {/* Action CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <button
               onClick={() => (user ? setCurrentTab('dashboard') : setCurrentTab('math'))}
-              className="w-full sm:w-auto px-7 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-sm shadow-xl shadow-emerald-500/25 transition-all hover:scale-102 flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-sm shadow-xl shadow-emerald-500/25 transition-all hover:scale-102 flex items-center justify-center gap-2"
             >
-              <span>{user ? 'Go to Student Dashboard' : 'Start Learning Free'}</span>
+              <span>{user ? 'My Dashboard' : 'Start Learning Free'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
+              onClick={() => setCurrentTab('ai-tutor')}
+              className="w-full sm:w-auto px-6 py-3 bg-emerald-950/40 hover:bg-emerald-900/40 text-emerald-300 hover:text-white font-bold rounded-xl text-sm border border-emerald-500/40 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/10"
+            >
+              <Sparkles className="w-4 h-4 text-emerald-400 animate-pulse" />
+              <span>Ask AI Tutor (Gemini 3.8 Flash)</span>
+            </button>
+            <button
               onClick={() => setCurrentTab('pdfs')}
-              className="w-full sm:w-auto px-6 py-3.5 bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white font-semibold rounded-xl text-sm border border-slate-700/80 transition-all flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-5 py-3 bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white font-semibold rounded-xl text-sm border border-slate-700/80 transition-all flex items-center justify-center gap-2"
             >
               <Download className="w-4 h-4 text-emerald-400" />
-              <span>Browse PDF Library</span>
+              <span>PDF Library</span>
             </button>
           </div>
 

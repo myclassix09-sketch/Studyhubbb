@@ -18,6 +18,9 @@ import { ContactPage } from './pages/ContactPage';
 import { LegalPage } from './pages/LegalPage';
 import { AdminPanel } from './pages/admin/AdminPanel';
 import { AdminLoginPage } from './pages/admin/AdminLoginPage';
+import { AiTutorPage } from './pages/AiTutorPage';
+import { FloatingChatWidget } from './components/chat/FloatingChatWidget';
+import { ChatProvider } from './context/ChatContext';
 
 import { PdfDocument } from './types';
 import { testFirestoreConnection } from './firebase/config';
@@ -201,6 +204,8 @@ function StudyhubApp() {
           />
         )}
 
+        {currentTab === 'ai-tutor' && <AiTutorPage />}
+
         {currentTab === 'about' && <AboutPage />}
 
         {currentTab === 'contact' && <ContactPage />}
@@ -218,6 +223,9 @@ function StudyhubApp() {
         }}
         openAuthModal={openAuth}
       />
+
+      {/* Floating Gemini AI Tutor Widget - Available anywhere for students */}
+      <FloatingChatWidget />
 
       {/* Global Modals */}
       <AuthModal
@@ -242,7 +250,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <StudyhubApp />
+        <ChatProvider>
+          <StudyhubApp />
+        </ChatProvider>
       </AuthProvider>
     </ThemeProvider>
   );

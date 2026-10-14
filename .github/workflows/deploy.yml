@@ -28,15 +28,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: 'npm'
 
       - name: Install Dependencies
         run: npm install --legacy-peer-deps --no-audit --no-fund
 
+      - name: Setup GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v4
+
       - name: Build Application for Production
         run: npm run build
-
-      - name: Setup GitHub Pages
-        uses: actions/configure-pages@v4
 
       - name: Upload Build Artifacts
         uses: actions/upload-pages-artifact@v3

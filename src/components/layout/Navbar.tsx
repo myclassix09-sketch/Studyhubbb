@@ -32,6 +32,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, openA
 
   const navLinks = [
     { id: 'home', label: 'Home', icon: BookOpen },
+    { id: 'ai-tutor', label: 'AI Tutor', icon: Sparkles, badge: 'Flash' },
     { id: 'math', label: 'Mathematics', icon: Calculator },
     { id: 'science', label: 'Science', icon: Atom },
     { id: 'pdfs', label: 'PDF Library', icon: FileText },
@@ -86,7 +87,12 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, openA
                   }`}
                 >
                   {Icon && <Icon className="w-4 h-4 opacity-80" />}
-                  {link.label}
+                  <span>{link.label}</span>
+                  {link.badge && (
+                    <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      {link.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}
