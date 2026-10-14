@@ -51,6 +51,12 @@ export const SubjectPage: React.FC<SubjectPageProps> = ({
       }
     }
     loadSubjectData();
+
+    const handleContentUpdate = () => {
+      loadSubjectData();
+    };
+    window.addEventListener('studyhub_content_changed', handleContentUpdate);
+    return () => window.removeEventListener('studyhub_content_changed', handleContentUpdate);
   }, [subjectId, user]);
 
   const isMath = subjectId === 'math';

@@ -19,6 +19,7 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && (
         (request.auth.token.email == 'myclassix09@gmail.com') ||
+        (request.auth.token.email == 'himanshu00@studyhub.edu') ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
@@ -30,42 +31,42 @@ service cloud.firestore {
     // Admin Allowlist Collection
     match /admins/{adminId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow write: if isAdmin() || (isSignedIn() && (request.auth.token.email == 'myclassix09@gmail.com' || request.auth.token.email == 'himanshu00@studyhub.edu'));
     }
 
-    // Site Settings
+    // Site Settings (Publicly readable for login/branding; editable only by admin)
     match /site_settings/{settingId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Announcements
+    // Announcements (Visible to authenticated students and admin; changes visible to all)
     match /announcements/{announcementId} {
-      allow read: if isAdmin() || resource.data.isPublished == true;
+      allow read: if isSignedIn();
       allow write: if isAdmin();
     }
 
-    // Academic Subjects
+    // Academic Subjects (Visible to authenticated students and admin; changes visible to all)
     match /subjects/{subjectId} {
-      allow read: if isAdmin() || resource.data.isPublished == true;
+      allow read: if isSignedIn();
       allow write: if isAdmin();
     }
 
-    // Chapters
+    // Chapters (Visible to authenticated students and admin; admin changes immediately visible to all)
     match /chapters/{chapterId} {
-      allow read: if isAdmin() || resource.data.isPublished == true;
+      allow read: if isSignedIn();
       allow write: if isAdmin();
     }
 
-    // Lessons
+    // Lessons (Visible to authenticated students and admin; admin changes immediately visible to all)
     match /lessons/{lessonId} {
-      allow read: if isAdmin() || resource.data.isPublished == true;
+      allow read: if isSignedIn();
       allow write: if isAdmin();
     }
 
-    // Quizzes
+    // Quizzes (Visible to authenticated students and admin; admin changes immediately visible to all)
     match /quizzes/{quizId} {
-      allow read: if isAdmin() || resource.data.isPublished == true;
+      allow read: if isSignedIn();
       allow write: if isAdmin();
     }
 
@@ -88,9 +89,9 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // PDF Documents Library
+    // PDF Documents Library (Visible to authenticated students and admin; admin changes immediately visible to all)
     match /pdf_documents/{pdfId} {
-      allow read: if isAdmin() || resource.data.isPublished == true;
+      allow read: if isSignedIn();
       allow write: if isAdmin();
     }
 

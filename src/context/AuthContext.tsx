@@ -28,8 +28,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Primary verified platform administrator email
-const PRIMARY_ADMIN_EMAIL = 'myclassix09@gmail.com';
+// Verified platform administrator emails
+const ADMIN_EMAILS = ['myclassix09@gmail.com', 'himanshu00@studyhub.edu'];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -43,8 +43,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (currentUser) {
         try {
-          const userEmail = currentUser.email?.toLowerCase();
-          if (userEmail === PRIMARY_ADMIN_EMAIL.toLowerCase()) {
+          const userEmail = currentUser.email?.toLowerCase() || '';
+          const isDesignatedAdmin = ADMIN_EMAILS.some((adm) => adm.toLowerCase() === userEmail);
+
+          if (isDesignatedAdmin) {
             setIsAdmin(true);
             // Ensure admin authorization document exists in firestore
             const adminDocRef = doc(db, 'admins', currentUser.uid);
@@ -60,7 +62,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         } catch (err) {
           console.warn('Admin authorization verification notice:', err);
-          setIsAdmin(currentUser.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL.toLowerCase());
+          const userEmail = currentUser.email?.toLowerCase() || '';
+          setIsAdmin(ADMIN_EMAILS.some((adm) => adm.toLowerCase() === userEmail));
         }
       } else {
         setIsAdmin(false);
@@ -71,38 +74,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  const adminSignIn = async (email: string, pass: string) => {
+  const adminSignIn = async (emailOrId: string, pass: string) => {
     setAuthError(null);
     try {
-      const cred = await signInWithEmailAndPassword(auth, email.trim(), pass);
-      const signedInUser = cred.user;
-      const userEmail = signedInUser.email?.toLowerCase();
+      const trimmed = emailOrId.trim();
+      let targetEmail = trimmed;
+      if (!targetEmail.includes('@')) {
+        targetEmail = `${targetEmail.toLowerCase()}@studyhub.edu`;
+      } else {
+        targetEmail = targetEmail.toLowerCase();
+      }
 
-      // Check if primary admin or exists in admins collection
-      let hasAdminPrivileges = userEmail === PRIMARY_ADMIN_EMAIL.toLowerCase();
+      let signedInUser: User;
+      try {
+        const cred = await signInWithEmailAndPassword(auth, targetEmail, pass);
+        signedInUser = cred.user;
+      } catch (signInErr: unknown) {
+        const errCode = (signInErr as { code?: string })?.code || '';
+        const errMsg = signInErr instanceof Error ? signInErr.message : '';
+        // If user does not exist in Firebase Auth yet and is a designated administrator, provision it
+        const isDesignated = ADMIN_EMAILS.some((adm) => adm.toLowerCase() === targetEmail.toLowerCase());
+        if (isDesignated && (errCode === 'auth/user-not-found' || errMsg.includes('user-not-found') || errCode === 'auth/invalid-credential')) {
+          try {
+            const newCred = await createUserWithEmailAndPassword(auth, targetEmail, pass);
+            signedInUser = newCred.user;
+          } catch {
+            throw signInErr;
+          }
+        } else {
+          throw signInErr;
+        }
+      }
+
+      const userEmail = signedInUser.email?.toLowerCase() || '';
+      let hasAdminPrivileges = ADMIN_EMAILS.some((adm) => adm.toLowerCase() === userEmail);
 
       if (!hasAdminPrivileges) {
         const adminDoc = await getDoc(doc(db, 'admins', signedInUser.uid));
         hasAdminPrivileges = adminDoc.exists();
-      } else {
-        // Guarantee Firestore admin record for primary admin
+      }
+
+      if (hasAdminPrivileges) {
+        // Guarantee Firestore admin record
         await setDoc(doc(db, 'admins', signedInUser.uid), {
           email: signedInUser.email,
           role: 'super_admin',
           updatedAt: new Date().toISOString()
         }, { merge: true }).catch(() => {});
-      }
-
-      if (!hasAdminPrivileges) {
-        // Not an authorized admin
+        setIsAdmin(true);
+      } else {
         await fbSignOut(auth);
         setIsAdmin(false);
         const deniedMsg = 'Access Denied: This account is not authorized as an administrator.';
         setAuthError(deniedMsg);
         throw new Error(deniedMsg);
       }
-
-      setIsAdmin(true);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Admin authentication failed.';
       setAuthError(message);
@@ -124,18 +150,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signInWithEmail = async (email: string, pass: string) => {
+  const signInWithEmail = async (emailOrId: string, pass: string) => {
     setAuthError(null);
     try {
-      await signInWithEmailAndPassword(auth, email.trim(), pass);
+      const trimmed = emailOrId.trim();
+      const targetEmail = trimmed.includes('@') ? trimmed : `${trimmed.toLowerCase()}@student.studyhub.edu`;
+      await signInWithEmailAndPassword(auth, targetEmail, pass);
     } catch (err: unknown) {
       let message = 'Failed to sign in. Please check your credentials.';
       if (err instanceof Error && err.message.includes('user-not-found')) {
-        message = 'No account found with this email.';
+        message = 'No account found with this email or student ID.';
       } else if (err instanceof Error && err.message.includes('wrong-password')) {
         message = 'Incorrect password.';
       } else if (err instanceof Error && err.message.includes('invalid-credential')) {
-        message = 'Invalid email or password.';
+        message = 'Invalid email/student ID or password.';
       }
       setAuthError(message);
       throw new Error(message);
@@ -149,8 +177,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (name.trim()) {
         await updateProfile(userCredential.user, { displayName: name.trim() });
       }
-      // If primary admin signs up with password, provision admin document
-      if (email.toLowerCase() === PRIMARY_ADMIN_EMAIL.toLowerCase()) {
+      // If admin signs up with password, provision admin document
+      const isDesignated = ADMIN_EMAILS.some((adm) => adm.toLowerCase() === email.toLowerCase());
+      if (isDesignated) {
         await setDoc(doc(db, 'admins', userCredential.user.uid), {
           email,
           role: 'super_admin',

@@ -49,6 +49,12 @@ export const PdfLibraryPage: React.FC<PdfLibraryPageProps> = ({ onPreviewPdf }) 
       }
     }
     loadPdfs();
+
+    const handleContentUpdate = () => {
+      loadPdfs();
+    };
+    window.addEventListener('studyhub_content_changed', handleContentUpdate);
+    return () => window.removeEventListener('studyhub_content_changed', handleContentUpdate);
   }, []);
 
   const filteredPdfs = pdfs

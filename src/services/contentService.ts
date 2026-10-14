@@ -76,6 +76,9 @@ export async function updateSiteSettings(settings: Partial<SiteSettings>): Promi
       updatedAt: new Date().toISOString()
     }, { merge: true });
     await logAdminAction('UPDATE', 'SiteSettings', 'global', 'Updated website global settings');
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('studyhub_content_changed', { detail: { type: 'settings' } }));
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
@@ -108,6 +111,9 @@ export async function saveAnnouncement(ann: Announcement): Promise<void> {
   try {
     await setDoc(doc(db, 'announcements', ann.id), ann, { merge: true });
     await logAdminAction('SAVE', 'Announcement', ann.id, `Saved announcement: ${ann.title}`);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('studyhub_content_changed', { detail: { type: 'announcement' } }));
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
@@ -118,6 +124,9 @@ export async function deleteAnnouncement(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'announcements', id));
     await logAdminAction('DELETE', 'Announcement', id, `Deleted announcement ID ${id}`);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('studyhub_content_changed', { detail: { type: 'announcement' } }));
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
   }
@@ -144,21 +153,41 @@ export async function getSubjects(): Promise<Subject[]> {
 export async function getChapters(subjectId?: string, isAdmin = false): Promise<Chapter[]> {
   const path = 'chapters';
   try {
-    let q = query(collection(db, path));
+    const snap = await getDocs(collection(db, path));
+    
+    // Map Firestore chapters by ID (these contain all admin edits/new chapters)
+    const firestoreMap = new Map<string, Chapter>();
+    snap.forEach((d) => {
+      firestoreMap.set(d.id, { id: d.id, ...d.data() } as Chapter);
+    });
+
+    // Baseline chapters
+    const baseList = DEFAULT_CHAPTERS;
+    const mergedList: Chapter[] = [];
+
+    // Apply admin modifications from Firestore over default chapters
+    for (const base of baseList) {
+      if (firestoreMap.has(base.id)) {
+        mergedList.push(firestoreMap.get(base.id)!);
+        firestoreMap.delete(base.id);
+      } else {
+        mergedList.push(base);
+      }
+    }
+
+    // Append newly created chapters from admin
+    firestoreMap.forEach((newChap) => {
+      mergedList.push(newChap);
+    });
+
+    let results = mergedList;
     if (subjectId) {
-      q = query(collection(db, path), where('subjectId', '==', subjectId));
+      results = results.filter((c) => c.subjectId === subjectId);
     }
-    const snap = await getDocs(q);
-    if (snap.empty) {
-      const filtered = subjectId ? DEFAULT_CHAPTERS.filter(c => c.subjectId === subjectId) : DEFAULT_CHAPTERS;
-      return filtered.sort((a, b) => a.order - b.order);
-    }
-    let list: Chapter[] = [];
-    snap.forEach(d => list.push({ id: d.id, ...d.data() } as Chapter));
     if (!isAdmin) {
-      list = list.filter(c => c.isPublished);
+      results = results.filter((c) => c.isPublished);
     }
-    return list.sort((a, b) => a.order - b.order);
+    return results.sort((a, b) => a.order - b.order);
   } catch (error) {
     console.warn('Chapters fetch fallback:', error);
     const filtered = subjectId ? DEFAULT_CHAPTERS.filter(c => c.subjectId === subjectId) : DEFAULT_CHAPTERS;
@@ -171,6 +200,9 @@ export async function saveChapter(chapter: Chapter): Promise<void> {
   try {
     await setDoc(doc(db, 'chapters', chapter.id), chapter, { merge: true });
     await logAdminAction('SAVE', 'Chapter', chapter.id, `Saved chapter: ${chapter.title}`);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('studyhub_content_changed', { detail: { type: 'chapter' } }));
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
@@ -181,6 +213,9 @@ export async function deleteChapter(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'chapters', id));
     await logAdminAction('DELETE', 'Chapter', id, `Deleted chapter ID ${id}`);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('studyhub_content_changed', { detail: { type: 'chapter' } }));
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
   }
@@ -190,24 +225,42 @@ export async function deleteChapter(id: string): Promise<void> {
 export async function getLessons(chapterId?: string, isAdmin = false): Promise<Lesson[]> {
   const path = 'lessons';
   try {
-    let q = query(collection(db, path));
+    const snap = await getDocs(collection(db, path));
+    const firestoreMap = new Map<string, Lesson>();
+    snap.forEach((d) => {
+      firestoreMap.set(d.id, { id: d.id, ...d.data() } as Lesson);
+    });
+
+    // Merge defaults with Firestore overrides
+    const baseList = DEFAULT_LESSONS;
+    const mergedList: Lesson[] = [];
+
+    for (const base of baseList) {
+      if (firestoreMap.has(base.id)) {
+        mergedList.push(firestoreMap.get(base.id)!);
+        firestoreMap.delete(base.id);
+      } else {
+        mergedList.push(base);
+      }
+    }
+
+    // Add any newly created admin lessons
+    firestoreMap.forEach((newLes) => {
+      mergedList.push(newLes);
+    });
+
+    let results = mergedList;
     if (chapterId) {
-      q = query(collection(db, path), where('chapterId', '==', chapterId));
+      results = results.filter((l) => l.chapterId === chapterId);
     }
-    const snap = await getDocs(q);
-    if (snap.empty) {
-      const fallback = chapterId ? DEFAULT_LESSONS.filter(l => l.chapterId === chapterId) : DEFAULT_LESSONS;
-      return fallback.sort((a, b) => a.order - b.order);
-    }
-    let list: Lesson[] = [];
-    snap.forEach(d => list.push({ id: d.id, ...d.data() } as Lesson));
     if (!isAdmin) {
-      list = list.filter(l => l.isPublished);
+      results = results.filter((l) => l.isPublished);
     }
-    return list.sort((a, b) => a.order - b.order);
+    return results.sort((a, b) => a.order - b.order);
   } catch (error) {
     console.warn('Lessons fetch fallback:', error);
-    return chapterId ? DEFAULT_LESSONS.filter(l => l.chapterId === chapterId) : DEFAULT_LESSONS;
+    const fallback = chapterId ? DEFAULT_LESSONS.filter(l => l.chapterId === chapterId) : DEFAULT_LESSONS;
+    return fallback;
   }
 }
 
@@ -234,6 +287,9 @@ export async function saveLesson(lesson: Lesson): Promise<void> {
       updatedAt: new Date().toISOString()
     }, { merge: true });
     await logAdminAction('SAVE', 'Lesson', lesson.id, `Saved lesson: ${lesson.title}`);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('studyhub_content_changed', { detail: { type: 'lesson' } }));
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
@@ -244,6 +300,9 @@ export async function deleteLesson(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'lessons', id));
     await logAdminAction('DELETE', 'Lesson', id, `Deleted lesson ID ${id}`);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('studyhub_content_changed', { detail: { type: 'lesson' } }));
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
   }
@@ -253,26 +312,35 @@ export async function deleteLesson(id: string): Promise<void> {
 export async function getQuizzes(subjectId?: string, chapterId?: string, isAdmin = false): Promise<Quiz[]> {
   const path = 'quizzes';
   try {
-    let q = query(collection(db, path));
-    if (subjectId) {
-      q = query(collection(db, path), where('subjectId', '==', subjectId));
+    const snap = await getDocs(collection(db, path));
+    const firestoreMap = new Map<string, Quiz>();
+    snap.forEach((d) => {
+      firestoreMap.set(d.id, { id: d.id, ...d.data() } as Quiz);
+    });
+
+    const baseList = DEFAULT_QUIZZES;
+    const mergedList: Quiz[] = [];
+
+    for (const base of baseList) {
+      if (firestoreMap.has(base.id)) {
+        mergedList.push(firestoreMap.get(base.id)!);
+        firestoreMap.delete(base.id);
+      } else {
+        mergedList.push(base);
+      }
     }
-    const snap = await getDocs(q);
-    if (snap.empty) {
-      let filtered = DEFAULT_QUIZZES;
-      if (subjectId) filtered = filtered.filter(q => q.subjectId === subjectId);
-      if (chapterId) filtered = filtered.filter(q => q.chapterId === chapterId);
-      return filtered;
-    }
-    let list: Quiz[] = [];
-    snap.forEach(d => list.push({ id: d.id, ...d.data() } as Quiz));
-    if (chapterId) {
-      list = list.filter(q => q.chapterId === chapterId);
-    }
+
+    firestoreMap.forEach((newQz) => {
+      mergedList.push(newQz);
+    });
+
+    let results = mergedList;
+    if (subjectId) results = results.filter((q) => q.subjectId === subjectId);
+    if (chapterId) results = results.filter((q) => q.chapterId === chapterId);
     if (!isAdmin) {
-      list = list.filter(q => q.isPublished);
+      results = results.filter((q) => q.isPublished);
     }
-    return list;
+    return results;
   } catch (error) {
     console.warn('Quizzes fetch fallback:', error);
     let filtered = DEFAULT_QUIZZES;
@@ -304,6 +372,9 @@ export async function saveQuiz(quiz: Quiz): Promise<void> {
       createdAt: quiz.createdAt || new Date().toISOString()
     }, { merge: true });
     await logAdminAction('SAVE', 'Quiz', quiz.id, `Saved quiz: ${quiz.title}`);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('studyhub_content_changed', { detail: { type: 'quiz' } }));
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
@@ -314,6 +385,9 @@ export async function deleteQuiz(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'quizzes', id));
     await logAdminAction('DELETE', 'Quiz', id, `Deleted quiz ID ${id}`);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('studyhub_content_changed', { detail: { type: 'quiz' } }));
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
   }
@@ -408,30 +482,43 @@ export async function recordLessonProgress(
 export async function getPdfDocuments(subjectId?: string, category?: string, isAdmin = false): Promise<PdfDocument[]> {
   const path = 'pdf_documents';
   try {
-    let q = query(collection(db, path));
-    if (subjectId) {
-      q = query(collection(db, path), where('subjectId', '==', subjectId));
+    const snap = await getDocs(collection(db, path));
+    const firestoreMap = new Map<string, PdfDocument>();
+    snap.forEach((d) => {
+      firestoreMap.set(d.id, { id: d.id, ...d.data() } as PdfDocument);
+    });
+
+    const baseList = DEFAULT_PDFS;
+    const mergedList: PdfDocument[] = [];
+
+    for (const base of baseList) {
+      if (firestoreMap.has(base.id)) {
+        mergedList.push(firestoreMap.get(base.id)!);
+        firestoreMap.delete(base.id);
+      } else {
+        mergedList.push(base);
+      }
     }
-    const snap = await getDocs(q);
-    if (snap.empty) {
-      let filtered = DEFAULT_PDFS;
-      if (subjectId) filtered = filtered.filter(p => p.subjectId === subjectId);
-      if (category && category !== 'All') filtered = filtered.filter(p => p.category === category);
-      return filtered;
+
+    firestoreMap.forEach((newPdf) => {
+      mergedList.push(newPdf);
+    });
+
+    let results = mergedList;
+    if (subjectId && subjectId !== 'All') {
+      results = results.filter((p) => p.subjectId === subjectId);
     }
-    let list: PdfDocument[] = [];
-    snap.forEach(d => list.push({ id: d.id, ...d.data() } as PdfDocument));
     if (category && category !== 'All') {
-      list = list.filter(p => p.category === category);
+      results = results.filter((p) => p.category === category);
     }
     if (!isAdmin) {
-      list = list.filter(p => p.isPublished);
+      results = results.filter((p) => p.isPublished);
     }
-    return list.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+    return results.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
   } catch (error) {
     console.warn('PDF fetch fallback:', error);
     let filtered = DEFAULT_PDFS;
-    if (subjectId) filtered = filtered.filter(p => p.subjectId === subjectId);
+    if (subjectId && subjectId !== 'All') filtered = filtered.filter(p => p.subjectId === subjectId);
     if (category && category !== 'All') filtered = filtered.filter(p => p.category === category);
     return filtered;
   }
@@ -445,6 +532,9 @@ export async function savePdfDocument(pdf: PdfDocument): Promise<void> {
       uploadedAt: pdf.uploadedAt || new Date().toISOString()
     }, { merge: true });
     await logAdminAction('SAVE', 'PdfDocument', pdf.id, `Saved PDF document: ${pdf.title}`);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('studyhub_content_changed', { detail: { type: 'pdf' } }));
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
@@ -455,6 +545,9 @@ export async function deletePdfDocument(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'pdf_documents', id));
     await logAdminAction('DELETE', 'PdfDocument', id, `Deleted PDF ID ${id}`);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('studyhub_content_changed', { detail: { type: 'pdf' } }));
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
   }

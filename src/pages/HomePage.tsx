@@ -68,6 +68,12 @@ export const HomePage: React.FC<HomePageProps> = ({
       }
     }
     loadHomeData();
+
+    const handleContentUpdate = () => {
+      loadHomeData();
+    };
+    window.addEventListener('studyhub_content_changed', handleContentUpdate);
+    return () => window.removeEventListener('studyhub_content_changed', handleContentUpdate);
   }, []);
 
   return (
