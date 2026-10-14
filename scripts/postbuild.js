@@ -20,9 +20,13 @@ function copyDirRecursive(src, dest) {
 try {
   const distDir = path.resolve('dist');
   const docsDir = path.resolve('docs');
+  const rootNoJekyll = path.resolve('.nojekyll');
   const distIndex = path.join(distDir, 'index.html');
   const dist404 = path.join(distDir, '404.html');
   const distNoJekyll = path.join(distDir, '.nojekyll');
+
+  // Ensure root .nojekyll exists
+  fs.writeFileSync(rootNoJekyll, '', 'utf8');
 
   if (fs.existsSync(distIndex)) {
     // 1. Create dist/404.html for SPA routing fallback on GitHub Pages

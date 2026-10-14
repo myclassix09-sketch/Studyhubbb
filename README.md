@@ -14,42 +14,53 @@ To access the Administrator Portal:
 
 ---
 
-## 🚀 Publishing to GitHub Pages (Solved & Ready)
+## 🚀 Why Was GitHub Pages Showing a Blank Page & How It's Solved
 
-If you previously encountered a **blank page** after publishing to GitHub Pages, all issues have been solved. You can choose either of these two methods:
+The live site at `https://myclassix09-sketch.github.io/Studyhubbb/` was showing a blank screen because GitHub Pages was serving the **raw uncompiled repository root** `index.html` (which points to `/src/main.tsx` — a raw TypeScript React source file that browsers cannot execute).
 
-### Method 1: GitHub Actions (Recommended — 100% Automated)
-1. In your GitHub repository, go to **Settings** → **Pages**.
-2. Under **"Build and deployment"** → **Source**, select **"GitHub Actions"**.
-3. Push to `main` (or run the workflow manually from the **Actions** tab).
-4. GitHub Actions builds the project and deploys the static files directly.
+### 2 Quick Steps to Make It Live in 30 Seconds:
 
-### Method 2: Deploy from Branch (`/docs` folder)
-1. Run `npm run build`. This generates both `dist/` and `docs/` (with `.nojekyll` and `404.html`).
-2. Commit and push the `docs/` folder to GitHub.
-3. Go to **Settings** → **Pages**.
-4. Under **"Build and deployment"** → **Source**, select **"Deploy from a branch"**.
-5. Choose branch **`main`** and folder **`/docs`**, then click **Save**.
+### Option 1: GitHub Actions (Recommended — Automatic Deploy on Every Push)
 
-### What Was Fixed to Prevent Blank Pages:
-1. **Generated `docs/` directory** with pre-built production bundles so GitHub Pages has precompiled assets ready.
-2. **Added `.nojekyll`** in both `dist/` and `docs/` to disable Jekyll asset filtering.
-3. **SPA `404.html` fallback** so client-side routes don't return 404 when refreshed.
-4. **Trailing-slash URL normalizer** in `index.html` ensuring relative `./assets/` always resolve correctly in repository subpaths.
-5. **React ErrorBoundary** wrapped around the root component to eliminate silent white-screen crashes.
-6. **Firebase loading safety timeout** so slow network or adblockers never trap the app on a perpetual loading screen.
+1. **Enable GitHub Pages for Actions**:
+   - In your repository `myclassix09-sketch/Studyhubbb`, go to **Settings** ➔ **Pages**.
+   - Under **"Build and deployment"** ➔ **Source**, select **"GitHub Actions"** from the dropdown.
+2. **Make Sure Workflows are Enabled**:
+   - Click the **Actions** tab in your repository.
+   - If GitHub shows a yellow banner ("Workflows aren't being run on this repository"), click **"Enable workflows"** (or "I understand my workflows, go ahead and enable them").
+   - Under **Settings** ➔ **Actions** ➔ **General**, ensure **Workflow permissions** is set to **"Read and write permissions"**.
+3. **Trigger the Workflow**:
+   - In the **Actions** tab, select **"Deploy to GitHub Pages"** on the left menu.
+   - Click the **"Run workflow"** dropdown on the right and click the green **"Run workflow"** button.
+   - Within 1–2 minutes, GitHub will build the app and deploy it live to `https://myclassix09-sketch.github.io/Studyhubbb/`!
 
 ---
 
-## 🛠 Local Development
+### Option 2: Deploy from Branch (`/docs` folder — No Actions Needed)
 
-```bash
-# Install dependencies
-npm install
+The project includes an automatic pre-compiled `docs/` folder with all production assets, `.nojekyll`, and `404.html`.
 
-# Start local dev server
-npm run dev
+1. Commit and push the repository to GitHub (including the `docs/` folder).
+2. Go to **Settings** ➔ **Pages** in your repository.
+3. Under **"Build and deployment"** ➔ **Source**, choose **"Deploy from a branch"**.
+4. Set Branch: **`main`** and Folder: **`/docs`**.
+5. Click **Save**.
+6. Your site will immediately be live and working!
 
-# Build for production
-npm run build
-```
+---
+
+### What Has Been Fixed in the Codebase:
+1. **GitHub Workflow (`.github/workflows/deploy.yml`)**:
+   - Upgraded to multi-branch trigger (`branches: ['**']`) and manual trigger (`workflow_dispatch`).
+   - Uses Node 20 LTS runner with clean installation and separate `build` and `deploy` jobs following GitHub's official Pages standard.
+2. **SPA Routing & Jekyll Bypass**:
+   - Added `.nojekyll` to root, `dist/`, and `docs/` so GitHub Pages never ignores `_` or assets.
+   - Created `404.html` in both `dist/` and `docs/` so page reloads do not return 404 errors.
+3. **URL Normalizer in `index.html`**:
+   - Ensures trailing slashes on subpath URLs (`/Studyhubbb/`) so relative `./assets/` always resolve correctly.
+4. **React ErrorBoundary**:
+   - Wrapped `App` in an ErrorBoundary so unexpected runtime crashes display a recovery screen instead of a blank page.
+5. **Smart Initial Loader**:
+   - If root `index.html` is ever served on GitHub Pages, it displays a branded loader and setup assistant instead of a blank white page.
+6. **Firebase Loading Safeguard**:
+   - Added a 2.5-second fallback timer so network delays or adblockers never block the app loading screen.
